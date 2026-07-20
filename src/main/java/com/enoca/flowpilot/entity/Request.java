@@ -29,12 +29,12 @@ public class Request {
 
     private LocalDateTime createdAt;
 
-
+    // Tip güvenliği (Generic List) sağlandı
     @OneToMany(mappedBy = "request", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<RequestDetail> details = new ArrayList<>();
 
-
+    // Okunabilirliği artırmak için eklenen çift yönlü ilişkiler
     @OneToMany(mappedBy = "request", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<ApprovalStep> approvalSteps = new ArrayList<>();

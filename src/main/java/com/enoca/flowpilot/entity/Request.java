@@ -15,23 +15,33 @@ public class Request {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    @JoinColumn(name = "employee_id", nullable = false)
+    private Employee employee;
 
     @Column(nullable = false)
-    private String requestType; // LEAVE, EXPENSE, EQUIPMENT
+    private String requestType;
 
     @Column(nullable = false)
-    private String status; // DRAFT, SUBMITTED, APPROVED, REJECTED
+    private String status;
 
     @Column(nullable = false)
-    private String priority; // LOW, MEDIUM, HIGH
+    private String priority;
 
     private LocalDateTime createdAt;
+
 
     @OneToMany(mappedBy = "request", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<RequestDetail> details = new ArrayList<>();
+
+
+    @OneToMany(mappedBy = "request", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<ApprovalStep> approvalSteps = new ArrayList<>();
+
+    @OneToMany(mappedBy = "request", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<ApprovalHistory> approvalHistories = new ArrayList<>();
 
     @PrePersist
     protected void onCreate() {

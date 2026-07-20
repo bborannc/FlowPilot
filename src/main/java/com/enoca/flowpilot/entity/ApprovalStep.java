@@ -19,9 +19,14 @@ public class ApprovalStep {
     @JoinColumn(name = "assigned_role_id", nullable = false)
     private Role assignedRole;
 
-    @Column(nullable = false)
-    private Integer stepOrder; // 1, 2, 3...
+    // "Bu adım hangi spesifik kullanıcıya atandı?" sorusunun cevabı
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "assigned_employee_id")
+    private Employee assignedEmployee;
 
     @Column(nullable = false)
-    private String status; // PENDING, APPROVED, REJECTED
+    private Integer stepOrder;
+
+    @Column(nullable = false)
+    private String status;
 }

@@ -17,13 +17,13 @@ public class ApprovalHistory {
     private Request request;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user; // Aksiyonu alan kişi
+    @JoinColumn(name = "employee_id", nullable = false)
+    private Employee employee;
 
     @Column(nullable = false)
-    private String action; // SUBMIT, APPROVE, REJECT
+    private String action;
 
-    private String description; // Red açıklamaları için zorunlu alan
+    private String description;
 
     private LocalDateTime actionDate;
 

@@ -1,5 +1,6 @@
 package com.enoca.flowpilot.entity;
 
+import com.enoca.flowpilot.enums.StepStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -29,5 +30,5 @@ public class ApprovalStep {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String status;
+    private StepStatus status;
 }

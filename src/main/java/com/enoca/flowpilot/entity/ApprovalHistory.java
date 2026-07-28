@@ -1,5 +1,6 @@
 package com.enoca.flowpilot.entity;
 
+import com.enoca.flowpilot.enums.ApprovalAction;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
@@ -25,8 +26,8 @@ public class ApprovalHistory {
     private Employee employee;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private String action;
+    @Column(name = "action", nullable = false)
+    private ApprovalAction action;
 
     private String description;
 

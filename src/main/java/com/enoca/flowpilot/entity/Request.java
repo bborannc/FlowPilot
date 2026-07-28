@@ -1,5 +1,8 @@
 package com.enoca.flowpilot.entity;
 
+import com.enoca.flowpilot.enums.RequestPriority;
+import com.enoca.flowpilot.enums.RequestStatus;
+import com.enoca.flowpilot.enums.RequestType;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
@@ -18,14 +21,17 @@ public class Request {
     @JoinColumn(name = "employee_id", nullable = false)
     private Employee employee;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String requestType;
+    private RequestType requestType;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String status;
+    private RequestStatus status;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String priority;
+    private RequestPriority priority;
 
     private LocalDateTime createdAt;
 

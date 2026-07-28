@@ -24,6 +24,7 @@ public class ApprovalHistory {
     @JoinColumn(name = "employee_id", nullable = false)
     private Employee employee;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private String action;
 

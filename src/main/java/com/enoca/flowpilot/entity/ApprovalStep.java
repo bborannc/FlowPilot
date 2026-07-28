@@ -27,6 +27,7 @@ public class ApprovalStep {
     @Column(nullable = false)
     private Integer stepOrder;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private String status;
 }

@@ -18,12 +18,15 @@ public class Request {
     @JoinColumn(name = "employee_id", nullable = false)
     private Employee employee;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private String requestType;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private String status;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private String priority;
 

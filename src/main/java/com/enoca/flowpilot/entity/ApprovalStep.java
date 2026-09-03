@@ -1,6 +1,7 @@
 package com.enoca.flowpilot.entity;
 
-import com.enoca.flowpilot.enums.StepStatus;
+import com.enoca.flowpilot.entity.enums.ApprovalStepStatus;
+import com.enoca.flowpilot.entity.enums.StepStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -29,6 +30,6 @@ public class ApprovalStep {
     private Integer stepOrder;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private StepStatus status;
+    @Column(name = "status", nullable = false)
+    private ApprovalStepStatus status;
 }

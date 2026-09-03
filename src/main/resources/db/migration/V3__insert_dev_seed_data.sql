@@ -1,6 +1,4 @@
--- Örnek test kullanıcıları (Dinamik Subquery kullanımı ile)
-
--- 1. Yönetici Ekleme
+-- 1. Yönetici
 INSERT INTO employees (name, email, department_id, role_id, manager_id)
 VALUES (
            'Gökhan Yönetici',
@@ -10,7 +8,7 @@ VALUES (
            NULL
        );
 
--- 2. İK Yetkilisi Ekleme
+-- 2. İK Yetkilisi
 INSERT INTO employees (name, email, department_id, role_id, manager_id)
 VALUES (
            'Ayşe İK',
@@ -20,7 +18,7 @@ VALUES (
            NULL
        );
 
--- 3. Finans Yetkilisi Ekleme
+-- 3. Finans Yetkilisi
 INSERT INTO employees (name, email, department_id, role_id, manager_id)
 VALUES (
            'Mehmet Finans',
@@ -30,7 +28,7 @@ VALUES (
            NULL
        );
 
--- 4. Çalışan Ekleme (Manager_id bilgisi gokhan.manager@company.com email'i üzerinden dinamik çekilir)
+-- 4. Çalışan (Manager dinamik email sorgusuyla bağlanır)
 INSERT INTO employees (name, email, department_id, role_id, manager_id)
 VALUES (
            'Boran Çalışan',

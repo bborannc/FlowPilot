@@ -1,4 +1,4 @@
-package com.enoca.flowpilot.enums;
+package com.enoca.flowpilot.entity.enums;
 
 public enum RequestStatus {
     PENDING,

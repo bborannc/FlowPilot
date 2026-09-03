@@ -102,6 +102,12 @@
             <artifactId>guava</artifactId>
             <version>33.0.0-jre</version>
         </dependency>
+        <dependency>
+            <groupId>io.github.cdimascio</groupId>
+            <artifactId>dotenv-java</artifactId>
+            <version>3.0.2</version>
+        </dependency>
+
     </dependencies>
 
     <build>

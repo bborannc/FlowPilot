@@ -1,4 +1,3 @@
--- Sadece sistemin temel yapı taşları (Prod için gerekli statik lookup verileri)
 INSERT INTO departments (name) VALUES
                                    ('Yazılım Geliştirme'),
                                    ('İnsan Kaynakları'),

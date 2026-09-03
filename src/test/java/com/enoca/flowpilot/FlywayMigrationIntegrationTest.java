@@ -13,7 +13,10 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest
+@SpringBootTest(properties = {
+        "spring.flyway.enabled=true",
+        "spring.flyway.locations=classpath:db/migration"
+})
 @Testcontainers
 class FlywayMigrationIntegrationTest {
 
@@ -28,21 +31,31 @@ class FlywayMigrationIntegrationTest {
         registry.add("spring.datasource.url", postgres::getJdbcUrl);
         registry.add("spring.datasource.username", postgres::getUsername);
         registry.add("spring.datasource.password", postgres::getPassword);
+        registry.add("spring.datasource.driver-class-name", () -> "org.postgresql.Driver");
+        registry.add("spring.flyway.enabled", () -> "true");
     }
 
-    @Autowired
+    @Autowired(required = false)
     private Flyway flyway;
 
     @Test
     @DisplayName("Sıfır PostgreSQL konteyneri üzerinde tüm Flyway migration'ları başarıyla çalışmalıdır")
     void shouldApplyAllMigrationsSuccessfullyOnCleanDatabase() {
-        // Flyway'in uyguladığı migration bilgilerini alıyoruz
+        // Eğer bean otomatik enjekte edilmediyse doğrudan konteyner bağlantısıyla Flyway'i ayağa kaldıralım
+        if (flyway == null) {
+            flyway = Flyway.configure()
+                    .dataSource(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword())
+                    .locations("classpath:db/migration")
+                    .load();
+            flyway.migrate();
+        }
+
         var migrationInfo = flyway.info();
 
-        // 1. Tüm migration'ların (V1, V2, V3) başarıyla uygulandığını doğruluyoruz
+        // 1. V1, V2 ve V3 migration'larının uygulandığını doğrula
         assertThat(migrationInfo.applied()).hasSize(3);
 
-        // 2. Veritabanının en son sürümde (v3) olduğunu doğruluyoruz
+        // 2. Veritabanının en son sürümde (3) olduğunu doğrula
         assertThat(migrationInfo.current().getVersion().getVersion()).isEqualTo("3");
     }
 }

@@ -1,6 +1,6 @@
 package com.enoca.flowpilot.entity;
 
-import com.enoca.flowpilot.enums.ApprovalAction;
+import com.enoca.flowpilot.entity.enums.ApprovalAction;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;

@@ -1,7 +1,6 @@
 package com.enoca.flowpilot.entity;
 
 import com.enoca.flowpilot.entity.enums.ApprovalStepStatus;
-import com.enoca.flowpilot.entity.enums.StepStatus;
 import jakarta.persistence.*;
 import lombok.*;
 

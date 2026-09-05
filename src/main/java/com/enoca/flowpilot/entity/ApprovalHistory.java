@@ -31,6 +31,7 @@ public class ApprovalHistory {
 
     private String description;
 
+    @Column(name = "action_date", nullable = false) //**
     private LocalDateTime actionDate;
 
     @PrePersist

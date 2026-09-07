@@ -1,4 +1,4 @@
-package com.enoca.flowpilot.entity;
+package com.enoca.flowpilot.core.entities;
 
 import jakarta.persistence.*;
 import lombok.*;

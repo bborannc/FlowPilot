@@ -1,8 +1,8 @@
-package com.enoca.flowpilot.entity;
+package com.enoca.flowpilot.core.entities;
 
-import com.enoca.flowpilot.entity.enums.RequestPriority;
-import com.enoca.flowpilot.entity.enums.RequestStatus;
-import com.enoca.flowpilot.entity.enums.RequestType;
+import com.enoca.flowpilot.core.enums.RequestPriority;
+import com.enoca.flowpilot.core.enums.RequestStatus;
+import com.enoca.flowpilot.core.enums.RequestType;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;

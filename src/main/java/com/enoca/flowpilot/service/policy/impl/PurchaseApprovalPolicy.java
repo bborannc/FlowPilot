@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
-public class EquipmentApprovalPolicy implements ApprovalPolicy {
+public class PurchaseApprovalPolicy implements ApprovalPolicy {
 
     private final ApprovalService approvalService;
 

@@ -9,13 +9,13 @@ import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
-public class PurchaseApprovalPolicy implements ApprovalPolicy {
+public class SalaryAdvanceApprovalPolicy implements ApprovalPolicy {
 
     private final ApprovalService approvalService;
 
     @Override
     public boolean supports(RequestType requestType) {
-        return requestType == RequestType.PURCHASE;
+        return requestType == RequestType.SALARY_ADVANCE;
     }
 
     @Override
@@ -25,6 +25,6 @@ public class PurchaseApprovalPolicy implements ApprovalPolicy {
                 : null;
 
         approvalService.createApprovalStep(request, "MANAGER", managerId, 1);
-        approvalService.createApprovalStep(request, "HR", null, 2);
+        approvalService.createApprovalStep(request, "FINANCE", null, 2);
     }
 }

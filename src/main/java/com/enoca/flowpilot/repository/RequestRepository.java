@@ -11,17 +11,16 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface RequestRepository extends JpaRepository<Request,Long> {
-    // Kullanıcının kendi taleplerini tarihe göre yeniden eskiye listeler
+public interface RequestRepository extends JpaRepository<Request, Long> {
+
     List<Request> findByEmployeeIdOrderByCreatedAtDesc(Long employeeId);
 
-    // Statüye göre filtreleme
     List<Request> findByStatus(RequestStatus status);
 
-    // N+1 problemini önlemek için detayları, adımları ve tarihçesiyle birlikte tek sorguda çeken metot
-    @Query("SELECT r FROM Request r " +
+    // MultipleBagFetchException'ı önlemek için tek collection (details) ve tekil entity (employee) fetch edilir
+    @Query("SELECT DISTINCT r FROM Request r " +
+            "JOIN FETCH r.employee " +
             "LEFT JOIN FETCH r.details " +
-            "LEFT JOIN FETCH r.approvalSteps " +
             "WHERE r.id = :id")
     Optional<Request> findByIdWithDetailsAndSteps(@Param("id") Long id);
 }

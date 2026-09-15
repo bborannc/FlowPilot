@@ -17,21 +17,21 @@ public class RequestController {
 
     private final RequestService requestService;
 
-    // 1. Yeni talep oluşturma ve submit etme
+    // 1. Taslak talep oluşturma (DRAFT)
     @PostMapping
-    public ResponseEntity<RequestResponseDto> createAndSubmit(@RequestBody CreateRequestDto dto) {
-        RequestResponseDto response = requestService.createAndSubmit(dto);
+    public ResponseEntity<RequestResponseDto> createDraft(@RequestBody CreateRequestDto dto) {
+        RequestResponseDto response = requestService.createDraft(dto);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
-    // 2. Taslak talebi submit etme
+    // 2. Taslak talebi onaya sunma (IN_APPROVAL)
     @PostMapping("/{id}/submit")
     public ResponseEntity<RequestResponseDto> submitRequest(@PathVariable Long id) {
         RequestResponseDto response = requestService.submitRequest(id);
         return ResponseEntity.ok(response);
     }
 
-    // 3. Tekil talep detaylarını görüntüleme
+    // 3. Tekil talep detayı
     @GetMapping("/{id}")
     public ResponseEntity<RequestResponseDto> getRequestDetails(@PathVariable Long id) {
         RequestResponseDto response = requestService.getRequestDetails(id);

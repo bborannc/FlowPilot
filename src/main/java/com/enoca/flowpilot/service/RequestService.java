@@ -1,27 +1,20 @@
 package com.enoca.flowpilot.service;
 
-import com.enoca.flowpilot.core.entities.Request;
-import com.enoca.flowpilot.core.enums.RequestPriority;
-import com.enoca.flowpilot.core.enums.RequestType;
 import com.enoca.flowpilot.dto.request.CreateRequestDto;
 import com.enoca.flowpilot.dto.response.RequestResponseDto;
 
 import java.util.List;
-import java.util.Map;
 
 public interface RequestService {
-    Request createAndSubmitRequest(Long employeeId, RequestType type, RequestPriority priority, Map<String, String> details);
-    Request getRequestById(Long id);
-    List<Request> getRequestsByEmployee(Long employeeId);
+    // 1. Yalnızca DRAFT statüsünde talep oluşturur (Onay akışı üretilmez)
+    RequestResponseDto createDraft(CreateRequestDto dto);
 
-    RequestResponseDto createAndSubmit(CreateRequestDto dto);
-
-    // 2. Mevcut bir taslak talebi onaya sunar
+    // 2. Draft talebi onaya sunar (Statü IN_APPROVAL olur, adımlar üretilir)
     RequestResponseDto submitRequest(Long requestId);
 
-    // 3. Tekil talep detayı
+    // 3. Talep detaylarını getirir
     RequestResponseDto getRequestDetails(Long requestId);
 
-    // 4. Kullanıcının kendi taleplerini listeleme
+    // 4. Kullanıcının taleplerini listeler
     List<RequestResponseDto> getMyRequests(Long employeeId);
 }

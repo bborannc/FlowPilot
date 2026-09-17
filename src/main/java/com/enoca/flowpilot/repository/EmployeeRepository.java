@@ -2,6 +2,8 @@ package com.enoca.flowpilot.repository;
 
 import com.enoca.flowpilot.core.entities.Employee;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -17,4 +19,7 @@ public interface EmployeeRepository extends JpaRepository<Employee,Long> {
 
     // Bir yöneticinin altındaki çalışanları listeler
     List<Employee> findByManagerId(Long managerId);
+
+    @Query("SELECT e FROM Employee e LEFT JOIN FETCH e.role LEFT JOIN FETCH e.department WHERE e.id = :id")
+    Optional<Employee> findByIdWithRoleAndDepartment(@Param("id") Long id);
 }

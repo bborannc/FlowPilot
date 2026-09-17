@@ -8,25 +8,26 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
-import java.util.Optional;
 
 @Repository
 public interface ApprovalStepRepository extends JpaRepository<ApprovalStep, Long> {
-    // Bir talebe ait adımları sıra numarasına göre getirir
+
     List<ApprovalStep> findByRequestIdOrderByStepOrderAsc(Long requestId);
 
-    // Onaycının bekleyen taleplerini listeler (Doğrudan kullanıcıya atanmış veya rolüne atanmış adımlar)
     @Query("SELECT s FROM ApprovalStep s " +
             "JOIN FETCH s.request r " +
+            "JOIN FETCH r.employee " +
+            "LEFT JOIN FETCH s.assignedRole role " +
+            "LEFT JOIN FETCH s.assignedEmployee emp " +
             "WHERE s.status = :status " +
-            "AND (s.assignedEmployee.id = :employeeId OR (s.assignedEmployee IS NULL AND s.assignedRole.id = :roleId)) " +
-            "ORDER BY r.createdAt DESC")
+            "AND (" +
+            "     (emp.id IS NOT NULL AND emp.id = :employeeId) " +
+            "     OR " +
+            "     (emp.id IS NULL AND role.id = :roleId)" +
+            ")")
     List<ApprovalStep> findPendingStepsForApprover(
             @Param("employeeId") Long employeeId,
             @Param("roleId") Long roleId,
             @Param("status") ApprovalStepStatus status
     );
-
-    // Bir talebin şu an bekleyen aktif adımını bulur
-    Optional<ApprovalStep> findFirstByRequestIdAndStatusOrderByStepOrderAsc(Long requestId, ApprovalStepStatus status);
 }

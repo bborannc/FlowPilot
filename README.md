@@ -83,3 +83,22 @@ Projede veritabanı migration'larının doğruluğunu test etmek amacıyla `Flyw
    ```sql
    CREATE DATABASE dynamic_approval_db;
 
+### 📋 Talep Tipleri (Request Types)
+* `LEAVE`: İzin Talebi (Zorunlu Detay: `totalDays`)
+* `SALARY_ADVANCE`: Maaş Avansı Talebi (Zorunlu Detay: `amount`)
+* `SOFTWARE_LICENSE`: Yazılım Lisansı Talebi (Zorunlu Detay: `softwareName`)
+* `TECHNICAL_SUPPORT`: Teknik Destek Talebi (Zorunlu Detay: `description`)
+
+### 🔄 Talep Statüleri (Request Statuses)
+* `DRAFT`: Taslak talep.
+* `IN_APPROVAL`: Onay süreci devam eden talep.
+* `APPROVED`: Tüm onay adımları başarıyla tamamlanan talep.
+* `REJECTED`: Herhangi bir adımda reddedilen talep.
+* `CANCELLED`: İptal edilmiş talep.
+
+### 🛡️ Onay Adımı Statüleri (Approval Step Statuses)
+* `PENDING`: Bekleyen veya sırası gelen aktif adım.
+* `APPROVED`: Onaylanmış adım.
+* `REJECTED`: Reddedilmiş adım.
+* `CANCELLED`: Reddedilme sebebiyle iptal edilen ardıl adımlar.
+

@@ -26,22 +26,20 @@ public class ApprovalController {
         return ResponseEntity.ok(steps);
     }
 
-    // 2. Adımı onaylama
     @PostMapping("/{stepId}/approve")
     public ResponseEntity<String> approveStep(
             @PathVariable Long stepId,
-            @RequestBody ApproveRequestDto dto) {
+            @Valid @RequestBody ApproveRequestDto dto) {
         approvalService.approveStep(stepId, dto);
         return ResponseEntity.ok("Talep adımı başarıyla onaylandı.");
     }
 
-    // 3. Adımı reddetme (açıklama zorunlu)
     @PostMapping("/{stepId}/reject")
     public ResponseEntity<String> rejectStep(
             @PathVariable Long stepId,
             @Valid @RequestBody RejectRequestDto dto) {
         approvalService.rejectStep(stepId, dto);
-        return ResponseEntity.ok("Talep reddedildi.");
+        return ResponseEntity.ok("Talep adımı başarıyla reddedildi.");
     }
 
     // 4. Talebin geçmiş onay aksiyonlarını görüntüleme

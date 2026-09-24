@@ -9,6 +9,7 @@ import com.enoca.flowpilot.core.enums.RequestStatus;
 import com.enoca.flowpilot.dto.request.CreateRequestDto;
 import com.enoca.flowpilot.dto.response.RequestResponseDto;
 import com.enoca.flowpilot.exception.ResourceNotFoundException;
+import com.enoca.flowpilot.mapper.RequestMapper;
 import com.enoca.flowpilot.repository.RequestRepository;
 import com.enoca.flowpilot.service.ApprovalService;
 import com.enoca.flowpilot.service.EmployeeService;
@@ -19,8 +20,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -37,12 +38,13 @@ public class RequestServiceImpl implements RequestService {
     public RequestResponseDto createDraft(CreateRequestDto dto) {
         Employee employee = employeeService.getById(dto.getEmployeeId());
 
-        // 1. Sadece DRAFT olarak kaydet
+        // 1. Sadece DRAFT olarak başlat
         Request request = Request.builder()
                 .employee(employee)
                 .requestType(dto.getRequestType())
                 .priority(dto.getPriority() != null ? dto.getPriority() : RequestPriority.MEDIUM)
                 .status(RequestStatus.DRAFT)
+                .details(new ArrayList<>()) // NullPointerException koruması
                 .build();
 
         // 2. Detayları ekle
@@ -59,10 +61,10 @@ public class RequestServiceImpl implements RequestService {
 
         Request savedRequest = requestRepository.save(request);
 
-        // 3. Draft oluşturulduğunda sadece tarihçe kaydı at
+        // 3. Draft oluşturulduğunda tarihçe kaydı at
         approvalService.recordHistory(savedRequest, employee.getId(), ApprovalAction.CREATED, "Talep taslak (DRAFT) olarak oluşturuldu.");
 
-        return mapToDto(savedRequest);
+        return RequestMapper.toDto(savedRequest);
     }
 
     @Override
@@ -72,20 +74,21 @@ public class RequestServiceImpl implements RequestService {
                 .orElseThrow(() -> new ResourceNotFoundException("Talep bulunamadı: " + requestId));
 
         if (request.getStatus() != RequestStatus.DRAFT) {
-            throw new IllegalStateException("Yalnızca DRAFT durumundaki talepler onay sürecine sunulabilir.");
+            throw new IllegalStateException("Yalnızca DRAFT (Taslak) durumundaki talepler onaya sunulabilir.");
         }
 
-        // 1. Statüyü IN_APPROVAL yap
-        request.setStatus(RequestStatus.IN_APPROVAL);
-
-        // 2. Registry üzerinden policy'yi bul ve adımları üret
         ApprovalPolicy policy = policyRegistry.getPolicy(request.getRequestType());
-        policy.generateApprovalSteps(request);
 
-        // 3. Tarihçe kaydı
-        approvalService.recordHistory(request, request.getEmployee().getId(), ApprovalAction.CREATED, "Talep onay sürecine sunuldu.");
+        // 1. Submit öncesi detay validasyonu
+        policy.validateDetails(request);
 
-        return mapToDto(request);
+        // 2. Politika motoru onay adımlarını üretir
+        policy.applyPolicy(request);
+
+        request.setStatus(RequestStatus.IN_APPROVAL);
+        Request savedRequest = requestRepository.save(request);
+
+        return RequestMapper.toDto(savedRequest);
     }
 
     @Override
@@ -93,31 +96,14 @@ public class RequestServiceImpl implements RequestService {
     public RequestResponseDto getRequestDetails(Long requestId) {
         Request request = requestRepository.findByIdWithDetailsAndSteps(requestId)
                 .orElseThrow(() -> new ResourceNotFoundException("Talep bulunamadı: " + requestId));
-        return mapToDto(request);
+        return RequestMapper.toDto(request);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<RequestResponseDto> getMyRequests(Long employeeId) {
         return requestRepository.findByEmployeeIdOrderByCreatedAtDesc(employeeId).stream()
-                .map(this::mapToDto)
+                .map(RequestMapper::toDto)
                 .collect(Collectors.toList());
-    }
-
-    private RequestResponseDto mapToDto(Request request) {
-        Map<String, String> detailMap = request.getDetails() != null
-                ? request.getDetails().stream().collect(Collectors.toMap(RequestDetail::getKey, RequestDetail::getValue, (v1, v2) -> v1))
-                : Map.of();
-
-        return RequestResponseDto.builder()
-                .id(request.getId())
-                .employeeId(request.getEmployee().getId())
-                .employeeName(request.getEmployee().getName())
-                .requestType(request.getRequestType())
-                .status(request.getStatus())
-                .priority(request.getPriority())
-                .createdAt(request.getCreatedAt())
-                .details(detailMap)
-                .build();
     }
 }

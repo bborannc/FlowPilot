@@ -2,6 +2,7 @@ package com.enoca.flowpilot.dto.request;
 
 import com.enoca.flowpilot.core.enums.RequestPriority;
 import com.enoca.flowpilot.core.enums.RequestType;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
 import java.util.Map;
@@ -12,8 +13,15 @@ import java.util.Map;
 @AllArgsConstructor
 @Builder
 public class CreateRequestDto {
+
+    @NotNull(message = "Çalışan ID boş olamaz.")
     private Long employeeId;
+
+    @NotNull(message = "Talep tipi boş olamaz.")
     private RequestType requestType;
+
+    @NotNull(message = "Öncelik seviyesi boş olamaz.")
     private RequestPriority priority;
-    private Map<String, String> details; // örn: {"amount": "7500", "description": "Monitör alımı"}
+
+    private Map<String, String> details;
 }

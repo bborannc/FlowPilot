@@ -6,6 +6,7 @@ import com.enoca.flowpilot.core.enums.RequestType;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 
 @Getter
@@ -22,4 +23,5 @@ public class RequestResponseDto {
     private RequestPriority priority;
     private LocalDateTime createdAt;
     private Map<String, String> details;
+    private List<ApprovalStepSummaryDto> steps;
 }

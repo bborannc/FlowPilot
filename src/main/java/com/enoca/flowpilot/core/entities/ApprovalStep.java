@@ -4,31 +4,35 @@ import com.enoca.flowpilot.core.enums.ApprovalStepStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 @Entity
 @Table(name = "approval_steps")
-@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class ApprovalStep {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "request_id", nullable = false)
-    private Request request;
+    @Column(name = "step_order", nullable = false)
+    private Integer stepOrder;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 50)
+    private ApprovalStepStatus status;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "assigned_role_id", nullable = false)
+    @JoinColumn(name = "assigned_role_id")
     private Role assignedRole;
 
-    // "Bu adım hangi spesifik kullanıcıya atandı?" sorusunun cevabı
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "assigned_employee_id")
     private Employee assignedEmployee;
 
-    @Column(nullable = false)
-    private Integer stepOrder;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false)
-    private ApprovalStepStatus status;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "request_id", nullable = false)
+    private Request request;
 }

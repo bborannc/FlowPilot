@@ -53,4 +53,8 @@ public class Request {
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
     }
+
+    @Builder.Default
+    @OneToMany(mappedBy = "request", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ApprovalStep> steps = new ArrayList<>();
 }

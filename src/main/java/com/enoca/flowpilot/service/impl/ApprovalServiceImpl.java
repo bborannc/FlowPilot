@@ -78,10 +78,15 @@ public class ApprovalServiceImpl implements ApprovalService {
             throw new IllegalStateException("Yalnızca beklemede (PENDING) olan adımlar onaylanabilir.");
         }
 
+        // Kural 1: Backend seviyesinde sıralı adım kontrolü (Önceki adımlar bitmeden bu adım onaylanamaz)
+        if (!isPreviousStepsCompleted(step)) {
+            throw new IllegalStateException("Önceki onay adımları tamamlanmadan bu adım onaylanamaz.");
+        }
+
+        // Kural 2: Doğrudan atama önceliği olan yetki doğrulaması
         Employee approver = employeeService.getById(dto.getApproverId());
         validateApproverAuthority(step, approver);
 
-        // 1. Mevcut adımı onayla
         step.setStatus(ApprovalStepStatus.APPROVED);
         stepRepository.save(step);
 
@@ -91,12 +96,10 @@ public class ApprovalServiceImpl implements ApprovalService {
                 : "Adım " + step.getStepOrder() + " onaylandı.";
         recordHistory(request, approver.getId(), ApprovalAction.APPROVED, comment);
 
-        // 2. Sıradaki adımları kontrol et
         List<ApprovalStep> allSteps = stepRepository.findByRequestIdOrderByStepOrderAsc(request.getId());
         boolean hasPendingSteps = allSteps.stream()
                 .anyMatch(s -> s.getStatus() == ApprovalStepStatus.PENDING);
 
-        // Eğer tüm adımlar bittiyse talebi APPROVED yap
         if (!hasPendingSteps) {
             request.setStatus(RequestStatus.APPROVED);
             requestRepository.save(request);
@@ -118,19 +121,33 @@ public class ApprovalServiceImpl implements ApprovalService {
             throw new IllegalStateException("Yalnızca beklemede (PENDING) olan adımlar reddedilebilir.");
         }
 
+        // Kural 1: Backend seviyesinde sıralı adım kontrolü (Sırası gelmeyen adım reddedilemez)
+        if (!isPreviousStepsCompleted(step)) {
+            throw new IllegalStateException("Önceki onay adımları tamamlanmadan bu işlem yapılamaz.");
+        }
+
+        // Kural 2: Yetki doğrulaması
         Employee approver = employeeService.getById(dto.getApproverId());
         validateApproverAuthority(step, approver);
 
-        // 1. Mevcut adımı reddet
+        // Mevcut adımı reddet
         step.setStatus(ApprovalStepStatus.REJECTED);
         stepRepository.save(step);
 
-        // 2. Talebi doğrudan REJECTED yap
+        // Talebi reddet
         Request request = step.getRequest();
         request.setStatus(RequestStatus.REJECTED);
         requestRepository.save(request);
 
-        // 3. Tarihçeye zorunlu red açıklamasını kaydet
+        // Kural 3: Kalan tüm PENDING adımları CANCELLED statüsüne çek
+        List<ApprovalStep> allSteps = stepRepository.findByRequestIdOrderByStepOrderAsc(request.getId());
+        for (ApprovalStep otherStep : allSteps) {
+            if (otherStep.getStatus() == ApprovalStepStatus.PENDING) {
+                otherStep.setStatus(ApprovalStepStatus.CANCELLED);
+                stepRepository.save(otherStep);
+            }
+        }
+
         recordHistory(request, approver.getId(), ApprovalAction.REJECTED, dto.getDescription());
     }
 
@@ -185,14 +202,22 @@ public class ApprovalServiceImpl implements ApprovalService {
                 ).collect(Collectors.toList());
     }
 
+    /**
+     * Doğrudan Atama Kuralı:
+     * Adımda assignedEmployee belirtilmişse SADECE o kullanıcı işlem yapabilir;
+     * aynı rolde olsa bile başka bir kullanıcı işlemi gerçekleştiremez.
+     */
     private void validateApproverAuthority(ApprovalStep step, Employee approver) {
-        boolean isDirectlyAssigned = step.getAssignedEmployee() != null
-                && step.getAssignedEmployee().getId().equals(approver.getId());
-        boolean hasAssignedRole = step.getAssignedRole() != null
-                && step.getAssignedRole().getId().equals(approver.getRole().getId());
-
-        if (!isDirectlyAssigned && !hasAssignedRole) {
-            throw new SecurityException("Bu onay adımını gerçekleştirme yetkiniz bulunmamaktadır.");
+        if (step.getAssignedEmployee() != null) {
+            if (!step.getAssignedEmployee().getId().equals(approver.getId())) {
+                throw new SecurityException("Bu onay adımı doğrudan başka bir kullanıcıya atanmıştır. Onaylama yetkiniz bulunmamaktadır.");
+            }
+        } else if (step.getAssignedRole() != null) {
+            if (approver.getRole() == null || !step.getAssignedRole().getId().equals(approver.getRole().getId())) {
+                throw new SecurityException("Bu onay adımı için gerekli role sahip değilsiniz.");
+            }
+        } else {
+            throw new SecurityException("Bu adım için yetkili tanımlanmamıştır.");
         }
     }
 }

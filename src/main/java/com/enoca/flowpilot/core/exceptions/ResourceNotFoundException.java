@@ -1,4 +1,4 @@
-package com.enoca.flowpilot.exception;
+package com.enoca.flowpilot.core.exceptions;
 
 public class ResourceNotFoundException extends RuntimeException {
     public ResourceNotFoundException(String message) {

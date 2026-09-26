@@ -1,7 +1,7 @@
 package com.enoca.flowpilot.service.impl;
 
 import com.enoca.flowpilot.core.entities.Employee;
-import com.enoca.flowpilot.exception.ResourceNotFoundException;
+import com.enoca.flowpilot.core.exceptions.ResourceNotFoundException;
 import com.enoca.flowpilot.repository.EmployeeRepository;
 import com.enoca.flowpilot.service.EmployeeService;
 import lombok.RequiredArgsConstructor;

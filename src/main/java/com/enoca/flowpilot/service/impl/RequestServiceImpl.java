@@ -8,7 +8,7 @@ import com.enoca.flowpilot.core.enums.RequestPriority;
 import com.enoca.flowpilot.core.enums.RequestStatus;
 import com.enoca.flowpilot.dto.request.CreateRequestDto;
 import com.enoca.flowpilot.dto.response.RequestResponseDto;
-import com.enoca.flowpilot.exception.ResourceNotFoundException;
+import com.enoca.flowpilot.core.exceptions.ResourceNotFoundException;
 import com.enoca.flowpilot.mapper.RequestMapper;
 import com.enoca.flowpilot.repository.RequestRepository;
 import com.enoca.flowpilot.service.ApprovalService;

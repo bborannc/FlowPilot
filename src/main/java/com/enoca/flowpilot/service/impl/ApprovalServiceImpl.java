@@ -8,7 +8,7 @@ import com.enoca.flowpilot.dto.request.ApproveRequestDto;
 import com.enoca.flowpilot.dto.request.RejectRequestDto;
 import com.enoca.flowpilot.dto.response.ApprovalHistoryResponseDto;
 import com.enoca.flowpilot.dto.response.ApprovalStepResponseDto;
-import com.enoca.flowpilot.exception.ResourceNotFoundException;
+import com.enoca.flowpilot.core.exceptions.ResourceNotFoundException;
 import com.enoca.flowpilot.repository.ApprovalHistoryRepository;
 import com.enoca.flowpilot.repository.ApprovalStepRepository;
 import com.enoca.flowpilot.repository.RequestRepository;

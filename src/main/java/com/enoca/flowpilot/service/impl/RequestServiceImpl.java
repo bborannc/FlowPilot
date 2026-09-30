@@ -6,9 +6,10 @@ import com.enoca.flowpilot.core.entities.RequestDetail;
 import com.enoca.flowpilot.core.enums.ApprovalAction;
 import com.enoca.flowpilot.core.enums.RequestPriority;
 import com.enoca.flowpilot.core.enums.RequestStatus;
+import com.enoca.flowpilot.core.exceptions.BusinessRuleException;
+import com.enoca.flowpilot.core.exceptions.ResourceNotFoundException;
 import com.enoca.flowpilot.dto.request.CreateRequestDto;
 import com.enoca.flowpilot.dto.response.RequestResponseDto;
-import com.enoca.flowpilot.core.exceptions.ResourceNotFoundException;
 import com.enoca.flowpilot.mapper.RequestMapper;
 import com.enoca.flowpilot.repository.RequestRepository;
 import com.enoca.flowpilot.service.ApprovalService;
@@ -38,16 +39,14 @@ public class RequestServiceImpl implements RequestService {
     public RequestResponseDto createDraft(CreateRequestDto dto) {
         Employee employee = employeeService.getById(dto.getEmployeeId());
 
-        // 1. Sadece DRAFT olarak başlat
         Request request = Request.builder()
                 .employee(employee)
                 .requestType(dto.getRequestType())
                 .priority(dto.getPriority() != null ? dto.getPriority() : RequestPriority.MEDIUM)
                 .status(RequestStatus.DRAFT)
-                .details(new ArrayList<>()) // NullPointerException koruması
+                .details(new ArrayList<>())
                 .build();
 
-        // 2. Detayları ekle
         if (dto.getDetails() != null && !dto.getDetails().isEmpty()) {
             dto.getDetails().forEach((key, value) -> {
                 RequestDetail detail = RequestDetail.builder()
@@ -61,7 +60,6 @@ public class RequestServiceImpl implements RequestService {
 
         Request savedRequest = requestRepository.save(request);
 
-        // 3. Draft oluşturulduğunda tarihçe kaydı at
         approvalService.recordHistory(savedRequest, employee.getId(), ApprovalAction.CREATED, "Talep taslak (DRAFT) olarak oluşturuldu.");
 
         return RequestMapper.toDto(savedRequest);
@@ -74,12 +72,15 @@ public class RequestServiceImpl implements RequestService {
                 .orElseThrow(() -> new ResourceNotFoundException("Talep bulunamadı: " + requestId));
 
         if (request.getStatus() != RequestStatus.DRAFT) {
-            throw new IllegalStateException("Yalnızca DRAFT (Taslak) durumundaki talepler onaya sunulabilir.");
+            throw new BusinessRuleException("Yalnızca taslak (DRAFT) durumundaki talepler onaya sunulabilir.");
         }
 
         ApprovalPolicy policy = policyRegistry.getPolicy(request.getRequestType());
+        if (policy == null) {
+            throw new BusinessRuleException("Belirtilen talep türü için tanımlı bir onay politikası bulunamadı: " + request.getRequestType());
+        }
 
-        // 1. Submit öncesi detay validasyonu
+        // 1. Submit öncesi tip bazlı detay validasyonu (Policy seviyesinde BusinessRuleException fırlatır)
         policy.validateDetails(request);
 
         // 2. Politika motoru onay adımlarını üretir

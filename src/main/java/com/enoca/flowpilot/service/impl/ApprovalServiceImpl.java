@@ -4,11 +4,13 @@ import com.enoca.flowpilot.core.entities.*;
 import com.enoca.flowpilot.core.enums.ApprovalAction;
 import com.enoca.flowpilot.core.enums.ApprovalStepStatus;
 import com.enoca.flowpilot.core.enums.RequestStatus;
+import com.enoca.flowpilot.core.exceptions.BusinessRuleException;
+import com.enoca.flowpilot.core.exceptions.ResourceNotFoundException;
+import com.enoca.flowpilot.core.exceptions.UnauthorizedApprovalException;
 import com.enoca.flowpilot.dto.request.ApproveRequestDto;
 import com.enoca.flowpilot.dto.request.RejectRequestDto;
 import com.enoca.flowpilot.dto.response.ApprovalHistoryResponseDto;
 import com.enoca.flowpilot.dto.response.ApprovalStepResponseDto;
-import com.enoca.flowpilot.core.exceptions.ResourceNotFoundException;
 import com.enoca.flowpilot.repository.ApprovalHistoryRepository;
 import com.enoca.flowpilot.repository.ApprovalStepRepository;
 import com.enoca.flowpilot.repository.RequestRepository;
@@ -75,12 +77,12 @@ public class ApprovalServiceImpl implements ApprovalService {
                 .orElseThrow(() -> new ResourceNotFoundException("Onay adımı bulunamadı: " + stepId));
 
         if (step.getStatus() != ApprovalStepStatus.PENDING) {
-            throw new IllegalStateException("Yalnızca beklemede (PENDING) olan adımlar onaylanabilir.");
+            throw new BusinessRuleException("Yalnızca beklemede (PENDING) olan adımlar onaylanabilir.");
         }
 
         // Kural 1: Backend seviyesinde sıralı adım kontrolü (Önceki adımlar bitmeden bu adım onaylanamaz)
         if (!isPreviousStepsCompleted(step)) {
-            throw new IllegalStateException("Önceki onay adımları tamamlanmadan bu adım onaylanamaz.");
+            throw new BusinessRuleException("Önceki onay adımları tamamlanmadan bu adım onaylanamaz.");
         }
 
         // Kural 2: Doğrudan atama önceliği olan yetki doğrulaması
@@ -111,19 +113,19 @@ public class ApprovalServiceImpl implements ApprovalService {
     @Transactional
     public void rejectStep(Long stepId, RejectRequestDto dto) {
         if (dto.getDescription() == null || dto.getDescription().trim().isEmpty()) {
-            throw new IllegalArgumentException("Reddetme işleminde açıklama girilmesi zorunludur.");
+            throw new BusinessRuleException("Reddetme işleminde açıklama girilmesi zorunludur.");
         }
 
         ApprovalStep step = stepRepository.findById(stepId)
                 .orElseThrow(() -> new ResourceNotFoundException("Onay adımı bulunamadı: " + stepId));
 
         if (step.getStatus() != ApprovalStepStatus.PENDING) {
-            throw new IllegalStateException("Yalnızca beklemede (PENDING) olan adımlar reddedilebilir.");
+            throw new BusinessRuleException("Yalnızca beklemede (PENDING) olan adımlar reddedilebilir.");
         }
 
         // Kural 1: Backend seviyesinde sıralı adım kontrolü (Sırası gelmeyen adım reddedilemez)
         if (!isPreviousStepsCompleted(step)) {
-            throw new IllegalStateException("Önceki onay adımları tamamlanmadan bu işlem yapılamaz.");
+            throw new BusinessRuleException("Önceki onay adımları tamamlanmadan bu işlem yapılamaz.");
         }
 
         // Kural 2: Yetki doğrulaması
@@ -210,14 +212,14 @@ public class ApprovalServiceImpl implements ApprovalService {
     private void validateApproverAuthority(ApprovalStep step, Employee approver) {
         if (step.getAssignedEmployee() != null) {
             if (!step.getAssignedEmployee().getId().equals(approver.getId())) {
-                throw new SecurityException("Bu onay adımı doğrudan başka bir kullanıcıya atanmıştır. Onaylama yetkiniz bulunmamaktadır.");
+                throw new UnauthorizedApprovalException("Bu onay adımı doğrudan başka bir kullanıcıya atanmıştır. Onaylama yetkiniz bulunmamaktadır.");
             }
         } else if (step.getAssignedRole() != null) {
             if (approver.getRole() == null || !step.getAssignedRole().getId().equals(approver.getRole().getId())) {
-                throw new SecurityException("Bu onay adımı için gerekli role sahip değilsiniz.");
+                throw new UnauthorizedApprovalException("Bu onay adımı için gerekli role sahip değilsiniz.");
             }
         } else {
-            throw new SecurityException("Bu adım için yetkili tanımlanmamıştır.");
+            throw new UnauthorizedApprovalException("Bu adım için yetkili tanımlanmamıştır.");
         }
     }
 }

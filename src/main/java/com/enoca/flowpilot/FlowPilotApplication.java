@@ -10,7 +10,8 @@ public class FlowPilotApplication {
     public static void main(String[] args) {
         // .env dosyasını oku ve sistem özelliklerine (System.setProperty) aktar
         Dotenv dotenv = Dotenv.configure()
-                .ignoreIfMissing() // Sunucuda .env yoksa (gerçek env var varsa) patlamasın
+                .ignoreIfMissing()
+                .systemProperties()// Sunucuda .env yoksa (gerçek env var varsa) patlamasın
                 .load();
 
         dotenv.entries().forEach(entry ->

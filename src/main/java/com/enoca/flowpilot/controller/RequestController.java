@@ -34,7 +34,9 @@ public class RequestController {
     }
 
     @GetMapping("/my-requests")
-    public ResponseEntity<List<RequestResponseDto>> getMyRequests(@RequestParam Long employeeId) {
-        return ResponseEntity.ok(requestService.getMyRequests(employeeId));
+    public ResponseEntity<List<RequestResponseDto>> getMyRequests() {
+        return ResponseEntity.ok(
+                requestService.getMyRequests()
+        );
     }
 }

@@ -1,6 +1,7 @@
 package com.enoca.flowpilot.repository;
 
 import com.enoca.flowpilot.core.entities.Employee;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -12,6 +13,7 @@ import java.util.Optional;
 @Repository
 public interface EmployeeRepository extends JpaRepository<Employee,Long> {
 
+    @EntityGraph(attributePaths = "role")
     Optional<Employee> findByEmail(String email);
 
     // Belirli bir roldeki tüm çalışanları bulur (onay akışında rol bazlı atama için)

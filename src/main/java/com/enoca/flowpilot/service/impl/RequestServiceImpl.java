@@ -12,6 +12,7 @@ import com.enoca.flowpilot.dto.request.CreateRequestDto;
 import com.enoca.flowpilot.dto.response.RequestResponseDto;
 import com.enoca.flowpilot.mapper.RequestMapper;
 import com.enoca.flowpilot.repository.RequestRepository;
+import com.enoca.flowpilot.security.CurrentUserService;
 import com.enoca.flowpilot.service.ApprovalService;
 import com.enoca.flowpilot.service.EmployeeService;
 import com.enoca.flowpilot.service.RequestService;
@@ -33,6 +34,7 @@ public class RequestServiceImpl implements RequestService {
     private final EmployeeService employeeService;
     private final ApprovalService approvalService;
     private final ApprovalPolicyRegistry policyRegistry;
+    private final CurrentUserService currentUserService;
 
     @Override
     @Transactional
@@ -102,9 +104,15 @@ public class RequestServiceImpl implements RequestService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<RequestResponseDto> getMyRequests(Long employeeId) {
-        return requestRepository.findByEmployeeIdOrderByCreatedAtDesc(employeeId).stream()
+    public List<RequestResponseDto> getMyRequests() {
+
+        Long employeeId = currentUserService.getCurrentEmployeeId();
+
+        List<Request> requests =
+                requestRepository.findByEmployeeIdOrderByCreatedAtDesc(employeeId);
+
+        return requests.stream()
                 .map(RequestMapper::toDto)
-                .collect(Collectors.toList());
+                .toList();
     }
 }

@@ -10,8 +10,5 @@ import lombok.*;
 @Builder
 public class ApproveRequestDto {
 
-    @NotNull(message = "Onaylayıcı çalışan ID boş olamaz.")
-    private Long approverId;
-
     private String description;
 }

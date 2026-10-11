@@ -9,12 +9,14 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/approvals")
 @RequiredArgsConstructor
+@SecurityRequirement(name = "bearer-key")
 public class ApprovalController {
 
     private final ApprovalService approvalService;
@@ -22,7 +24,7 @@ public class ApprovalController {
     // 1. Onaycının bekleyen adımlarını listeleme
     @GetMapping("/pending")
     public ResponseEntity<List<ApprovalStepResponseDto>> getPendingSteps(@RequestParam Long employeeId) {
-        List<ApprovalStepResponseDto> steps = approvalService.getPendingStepsForApprover(employeeId);
+        List<ApprovalStepResponseDto> steps = approvalService.getPendingStepsForApprover();
         return ResponseEntity.ok(steps);
     }
 

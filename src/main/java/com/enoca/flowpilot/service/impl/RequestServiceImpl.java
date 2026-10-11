@@ -39,12 +39,19 @@ public class RequestServiceImpl implements RequestService {
     @Override
     @Transactional
     public RequestResponseDto createDraft(CreateRequestDto dto) {
-        Employee employee = employeeService.getById(dto.getEmployeeId());
+
+        // Giriş yapan kullanıcı JWT üzerinden bulunur.
+        Long currentEmployeeId = currentUserService.getCurrentEmployeeId();
+
+        // Talebin sahibi istemciden değil, doğrulanmış kullanıcıdan alınır.
+        Employee employee = employeeService.getById(currentEmployeeId);
 
         Request request = Request.builder()
                 .employee(employee)
                 .requestType(dto.getRequestType())
-                .priority(dto.getPriority() != null ? dto.getPriority() : RequestPriority.MEDIUM)
+                .priority(dto.getPriority() != null
+                        ? dto.getPriority()
+                        : RequestPriority.MEDIUM)
                 .status(RequestStatus.DRAFT)
                 .details(new ArrayList<>())
                 .build();
@@ -56,13 +63,19 @@ public class RequestServiceImpl implements RequestService {
                         .key(key)
                         .value(value)
                         .build();
+
                 request.getDetails().add(detail);
             });
         }
 
         Request savedRequest = requestRepository.save(request);
 
-        approvalService.recordHistory(savedRequest, employee.getId(), ApprovalAction.CREATED, "Talep taslak (DRAFT) olarak oluşturuldu.");
+        approvalService.recordHistory(
+                savedRequest,
+                employee.getId(),
+                ApprovalAction.CREATED,
+                "Talep taslak (DRAFT) olarak oluşturuldu."
+        );
 
         return RequestMapper.toDto(savedRequest);
     }
@@ -70,25 +83,49 @@ public class RequestServiceImpl implements RequestService {
     @Override
     @Transactional
     public RequestResponseDto submitRequest(Long requestId) {
+
+        // 1. Giriş yapan kullanıcıyı JWT üzerinden belirle.
+        Long currentEmployeeId = currentUserService.getCurrentEmployeeId();
+
+        // 2. Talebi bul.
         Request request = requestRepository.findByIdWithDetailsAndSteps(requestId)
-                .orElseThrow(() -> new ResourceNotFoundException("Talep bulunamadı: " + requestId));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Talep bulunamadı: " + requestId
+                        )
+                );
 
+        // 3. Talebin sahibi ile giriş yapan kullanıcıyı karşılaştır.
+        if (!request.getEmployee().getId().equals(currentEmployeeId)) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.FORBIDDEN,
+                    "Bu talebi onaya sunma yetkiniz yok."
+            );
+        }
+
+        // 4. Yalnızca DRAFT talepler onaya sunulabilir.
         if (request.getStatus() != RequestStatus.DRAFT) {
-            throw new BusinessRuleException("Yalnızca taslak (DRAFT) durumundaki talepler onaya sunulabilir.");
+            throw new BusinessRuleException(
+                    "Yalnızca taslak (DRAFT) durumundaki talepler onaya sunulabilir."
+            );
         }
 
+        // 5. Talep türüne ait onay politikasını bul.
         ApprovalPolicy policy = policyRegistry.getPolicy(request.getRequestType());
+
         if (policy == null) {
-            throw new BusinessRuleException("Belirtilen talep türü için tanımlı bir onay politikası bulunamadı: " + request.getRequestType());
+            throw new BusinessRuleException(
+                    "Belirtilen talep türü için tanımlı bir onay politikası bulunamadı: "
+                            + request.getRequestType()
+            );
         }
 
-        // 1. Submit öncesi tip bazlı detay validasyonu (Policy seviyesinde BusinessRuleException fırlatır)
+        // 6. Talep detaylarını doğrula ve onay adımlarını oluştur.
         policy.validateDetails(request);
-
-        // 2. Politika motoru onay adımlarını üretir
         policy.applyPolicy(request);
 
         request.setStatus(RequestStatus.IN_APPROVAL);
+
         Request savedRequest = requestRepository.save(request);
 
         return RequestMapper.toDto(savedRequest);
@@ -97,8 +134,26 @@ public class RequestServiceImpl implements RequestService {
     @Override
     @Transactional(readOnly = true)
     public RequestResponseDto getRequestDetails(Long requestId) {
+
+        // Giriş yapan kullanıcının ID'si JWT üzerinden alınır.
+        Long currentEmployeeId = currentUserService.getCurrentEmployeeId();
+
+        // Talep bulunamazsa mevcut 404 mekanizması çalışır.
         Request request = requestRepository.findByIdWithDetailsAndSteps(requestId)
-                .orElseThrow(() -> new ResourceNotFoundException("Talep bulunamadı: " + requestId));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Talep bulunamadı: " + requestId
+                        )
+                );
+
+        // Talep sahibinin ID'si ile giriş yapan kullanıcının ID'si karşılaştırılır.
+        if (!request.getEmployee().getId().equals(currentEmployeeId)) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.FORBIDDEN,
+                    "Bu talebi görüntüleme yetkiniz yok."
+            );
+        }
+
         return RequestMapper.toDto(request);
     }
 

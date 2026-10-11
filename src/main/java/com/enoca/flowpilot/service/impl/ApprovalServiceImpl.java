@@ -20,6 +20,8 @@ import com.enoca.flowpilot.service.EmployeeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.enoca.flowpilot.security.ApprovalAuthorizationService;
+import com.enoca.flowpilot.security.CurrentUserService;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -33,6 +35,8 @@ public class ApprovalServiceImpl implements ApprovalService {
     private final RequestRepository requestRepository;
     private final RoleRepository roleRepository;
     private final EmployeeService employeeService;
+    private final ApprovalAuthorizationService approvalAuthorizationService;
+    private final CurrentUserService currentUserService;
 
     @Override
     @Transactional
@@ -73,76 +77,125 @@ public class ApprovalServiceImpl implements ApprovalService {
     @Override
     @Transactional
     public void approveStep(Long stepId, ApproveRequestDto dto) {
+
         ApprovalStep step = stepRepository.findById(stepId)
-                .orElseThrow(() -> new ResourceNotFoundException("Onay adımı bulunamadı: " + stepId));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Onay adımı bulunamadı: " + stepId
+                        )
+                );
 
+        // 1. Onaylayan kullanıcının gerçekten yetkili olduğunu doğrula.
+        approvalAuthorizationService.assertCanActOnStep(step);
+
+        // 2. Yalnızca PENDING durumundaki adımlar onaylanabilir.
         if (step.getStatus() != ApprovalStepStatus.PENDING) {
-            throw new BusinessRuleException("Yalnızca beklemede (PENDING) olan adımlar onaylanabilir.");
+            throw new BusinessRuleException(
+                    "Yalnızca beklemede (PENDING) olan adımlar onaylanabilir."
+            );
         }
 
-        // Kural 1: Backend seviyesinde sıralı adım kontrolü (Önceki adımlar bitmeden bu adım onaylanamaz)
+        // 3. Önceki adımların tamamlanmış olduğunu doğrula.
         if (!isPreviousStepsCompleted(step)) {
-            throw new BusinessRuleException("Önceki onay adımları tamamlanmadan bu adım onaylanamaz.");
+            throw new BusinessRuleException(
+                    "Önceki onay adımları tamamlanmadan bu adım onaylanamaz."
+            );
         }
 
-        // Kural 2: Doğrudan atama önceliği olan yetki doğrulaması
-        Employee approver = employeeService.getById(dto.getApproverId());
-        validateApproverAuthority(step, approver);
+        // 4. Onaylayan çalışanı request'ten değil, JWT'den bul.
+        Long currentEmployeeId = currentUserService.getCurrentEmployeeId();
+        Employee approver = employeeService.getById(currentEmployeeId);
 
+        // 5. Onay adımını güncelle.
         step.setStatus(ApprovalStepStatus.APPROVED);
         stepRepository.save(step);
 
         Request request = step.getRequest();
-        String comment = (dto.getDescription() != null && !dto.getDescription().isBlank())
-                ? dto.getDescription()
-                : "Adım " + step.getStepOrder() + " onaylandı.";
-        recordHistory(request, approver.getId(), ApprovalAction.APPROVED, comment);
 
-        List<ApprovalStep> allSteps = stepRepository.findByRequestIdOrderByStepOrderAsc(request.getId());
+        String comment =
+                dto.getDescription() != null
+                        && !dto.getDescription().isBlank()
+                        ? dto.getDescription()
+                        : "Adım " + step.getStepOrder() + " onaylandı.";
+
+        recordHistory(
+                request,
+                approver.getId(),
+                ApprovalAction.APPROVED,
+                comment
+        );
+
+        // 6. Diğer onay adımlarının durumlarını kontrol et.
+        List<ApprovalStep> allSteps =
+                stepRepository.findByRequestIdOrderByStepOrderAsc(request.getId());
+
         boolean hasPendingSteps = allSteps.stream()
                 .anyMatch(s -> s.getStatus() == ApprovalStepStatus.PENDING);
 
+        // 7. Bekleyen adım kalmadıysa talebi onayla.
         if (!hasPendingSteps) {
             request.setStatus(RequestStatus.APPROVED);
             requestRepository.save(request);
-            recordHistory(request, approver.getId(), ApprovalAction.APPROVED, "Tüm onay süreçleri tamamlandı, talep onaylandı.");
+
+            recordHistory(
+                    request,
+                    approver.getId(),
+                    ApprovalAction.APPROVED,
+                    "Tüm onay süreçleri tamamlandı, talep onaylandı."
+            );
         }
     }
 
     @Override
     @Transactional
     public void rejectStep(Long stepId, RejectRequestDto dto) {
-        if (dto.getDescription() == null || dto.getDescription().trim().isEmpty()) {
-            throw new BusinessRuleException("Reddetme işleminde açıklama girilmesi zorunludur.");
+
+        if (dto.getDescription() == null
+                || dto.getDescription().isBlank()) {
+            throw new BusinessRuleException(
+                    "Reddetme işleminde açıklama girilmesi zorunludur."
+            );
         }
 
         ApprovalStep step = stepRepository.findById(stepId)
-                .orElseThrow(() -> new ResourceNotFoundException("Onay adımı bulunamadı: " + stepId));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Onay adımı bulunamadı: " + stepId
+                        )
+                );
+
+        // Kullanıcının bu onay adımına atanmış olup olmadığını kontrol et.
+        approvalAuthorizationService.assertCanActOnStep(step);
 
         if (step.getStatus() != ApprovalStepStatus.PENDING) {
-            throw new BusinessRuleException("Yalnızca beklemede (PENDING) olan adımlar reddedilebilir.");
+            throw new BusinessRuleException(
+                    "Yalnızca beklemede (PENDING) olan adımlar reddedilebilir."
+            );
         }
 
-        // Kural 1: Backend seviyesinde sıralı adım kontrolü (Sırası gelmeyen adım reddedilemez)
         if (!isPreviousStepsCompleted(step)) {
-            throw new BusinessRuleException("Önceki onay adımları tamamlanmadan bu işlem yapılamaz.");
+            throw new BusinessRuleException(
+                    "Önceki onay adımları tamamlanmadan bu işlem yapılamaz."
+            );
         }
 
-        // Kural 2: Yetki doğrulaması
-        Employee approver = employeeService.getById(dto.getApproverId());
-        validateApproverAuthority(step, approver);
+        // Reddeden çalışan JWT'den belirlenir.
+        Long currentEmployeeId = currentUserService.getCurrentEmployeeId();
+        Employee approver = employeeService.getById(currentEmployeeId);
 
-        // Mevcut adımı reddet
+        // Mevcut adımı reddet.
         step.setStatus(ApprovalStepStatus.REJECTED);
         stepRepository.save(step);
 
-        // Talebi reddet
+        // Talebi reddet.
         Request request = step.getRequest();
         request.setStatus(RequestStatus.REJECTED);
         requestRepository.save(request);
 
-        // Kural 3: Kalan tüm PENDING adımları CANCELLED statüsüne çek
-        List<ApprovalStep> allSteps = stepRepository.findByRequestIdOrderByStepOrderAsc(request.getId());
+        // Bekleyen diğer adımları iptal et.
+        List<ApprovalStep> allSteps =
+                stepRepository.findByRequestIdOrderByStepOrderAsc(request.getId());
+
         for (ApprovalStep otherStep : allSteps) {
             if (otherStep.getStatus() == ApprovalStepStatus.PENDING) {
                 otherStep.setStatus(ApprovalStepStatus.CANCELLED);
@@ -150,20 +203,32 @@ public class ApprovalServiceImpl implements ApprovalService {
             }
         }
 
-        recordHistory(request, approver.getId(), ApprovalAction.REJECTED, dto.getDescription());
+        recordHistory(
+                request,
+                approver.getId(),
+                ApprovalAction.REJECTED,
+                dto.getDescription()
+        );
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<ApprovalStepResponseDto> getPendingStepsForApprover(Long employeeId) {
-        Employee approver = employeeService.getById(employeeId);
-        Long roleId = (approver.getRole() != null) ? approver.getRole().getId() : -1L;
+    public List<ApprovalStepResponseDto> getPendingStepsForApprover() {
 
-        List<ApprovalStep> pendingSteps = stepRepository.findPendingStepsForApprover(
-                approver.getId(),
-                roleId,
-                ApprovalStepStatus.PENDING
-        );
+        Long currentEmployeeId = currentUserService.getCurrentEmployeeId();
+
+        Employee approver = employeeService.getById(currentEmployeeId);
+
+        Long roleId = approver.getRole() != null
+                ? approver.getRole().getId()
+                : -1L;
+
+        List<ApprovalStep> pendingSteps =
+                stepRepository.findPendingStepsForApprover(
+                        approver.getId(),
+                        roleId,
+                        ApprovalStepStatus.PENDING
+                );
 
         return pendingSteps.stream()
                 .filter(this::isPreviousStepsCompleted)
@@ -174,10 +239,15 @@ public class ApprovalServiceImpl implements ApprovalService {
                         .requesterName(step.getRequest().getEmployee().getName())
                         .stepOrder(step.getStepOrder())
                         .status(step.getStatus())
-                        .roleName(step.getAssignedRole() != null ? step.getAssignedRole().getName() : null)
+                        .roleName(
+                                step.getAssignedRole() != null
+                                        ? step.getAssignedRole().getName()
+                                        : null
+                        )
                         .requestCreatedAt(step.getRequest().getCreatedAt())
                         .build()
-                ).collect(Collectors.toList());
+                )
+                .collect(Collectors.toList());
     }
 
     private boolean isPreviousStepsCompleted(ApprovalStep currentStep) {

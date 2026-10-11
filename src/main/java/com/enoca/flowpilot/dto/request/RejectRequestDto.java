@@ -10,8 +10,6 @@ import lombok.*;
 @NoArgsConstructor
 @Builder
 public class RejectRequestDto {
-    @NotNull(message = "Onaylayıcı ID boş olamaz.")
-    private Long approverId;
 
     @NotBlank(message = "Reddetme işleminde açıklama zorunludur.")
     private String description;

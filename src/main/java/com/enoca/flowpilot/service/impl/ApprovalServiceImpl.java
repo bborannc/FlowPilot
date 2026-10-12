@@ -22,6 +22,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.enoca.flowpilot.security.ApprovalAuthorizationService;
 import com.enoca.flowpilot.security.CurrentUserService;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.util.Objects;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -263,7 +267,35 @@ public class ApprovalServiceImpl implements ApprovalService {
     @Override
     @Transactional(readOnly = true)
     public List<ApprovalHistoryResponseDto> getRequestHistory(Long requestId) {
-        return historyRepository.findByRequestIdOrderByActionDateAsc(requestId).stream()
+
+        // 1. Talebin mevcut olup olmadığını kontrol et.
+        Request request = requestRepository.findById(requestId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Talep bulunamadı: " + requestId
+                        )
+                );
+
+        // 2. Giriş yapan çalışanın ID'sini JWT'den al.
+        Long currentEmployeeId = currentUserService.getCurrentEmployeeId();
+
+        // 3. Çalışan yalnızca kendi talebinin geçmişini görüntüleyebilir.
+        if (request.getEmployee() == null
+                || !Objects.equals(
+                request.getEmployee().getId(),
+                currentEmployeeId
+        )) {
+
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "Bu talebin onay geçmişini görüntüleme yetkiniz yok."
+            );
+        }
+
+        // 4. Yetki kontrolünden sonra geçmiş kayıtlarını getir.
+        return historyRepository
+                .findByRequestIdOrderByActionDateAsc(requestId)
+                .stream()
                 .map(h -> ApprovalHistoryResponseDto.builder()
                         .id(h.getId())
                         .employeeName(h.getEmployee().getName())
@@ -271,25 +303,7 @@ public class ApprovalServiceImpl implements ApprovalService {
                         .description(h.getDescription())
                         .actionDate(h.getActionDate())
                         .build()
-                ).collect(Collectors.toList());
-    }
-
-    /**
-     * Doğrudan Atama Kuralı:
-     * Adımda assignedEmployee belirtilmişse SADECE o kullanıcı işlem yapabilir;
-     * aynı rolde olsa bile başka bir kullanıcı işlemi gerçekleştiremez.
-     */
-    private void validateApproverAuthority(ApprovalStep step, Employee approver) {
-        if (step.getAssignedEmployee() != null) {
-            if (!step.getAssignedEmployee().getId().equals(approver.getId())) {
-                throw new UnauthorizedApprovalException("Bu onay adımı doğrudan başka bir kullanıcıya atanmıştır. Onaylama yetkiniz bulunmamaktadır.");
-            }
-        } else if (step.getAssignedRole() != null) {
-            if (approver.getRole() == null || !step.getAssignedRole().getId().equals(approver.getRole().getId())) {
-                throw new UnauthorizedApprovalException("Bu onay adımı için gerekli role sahip değilsiniz.");
-            }
-        } else {
-            throw new UnauthorizedApprovalException("Bu adım için yetkili tanımlanmamıştır.");
-        }
+                )
+                .collect(Collectors.toList());
     }
 }

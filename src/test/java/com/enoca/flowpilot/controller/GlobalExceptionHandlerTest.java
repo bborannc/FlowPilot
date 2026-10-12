@@ -13,6 +13,8 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
@@ -46,6 +48,13 @@ class GlobalExceptionHandlerTest {
         @GetMapping("/internal-error")
         public void throwInternalError() {
             throw new NullPointerException("Veritabanı bağlantı detayları ve gizli stacktrace");
+        }
+        @GetMapping("/response-status")
+        public void throwResponseStatusException() {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "Bu onay adımında işlem yapma yetkiniz yok."
+            );
         }
     }
 
@@ -101,5 +110,19 @@ class GlobalExceptionHandlerTest {
                 .andExpect(jsonPath("$.error", is("Internal Server Error")))
                 .andExpect(jsonPath("$.message", is("Sistemde beklenmeyen bir hata oluştu. Lütfen sistem yöneticisi ile iletişime geçin.")))
                 .andExpect(jsonPath("$.validationErrors").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("ResponseStatusException 403 fırlattığında doğru hata yanıtı dönmeli")
+    void shouldReturn403WhenResponseStatusExceptionThrown() throws Exception {
+        mockMvc.perform(get("/test/exceptions/response-status")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status", is(403)))
+                .andExpect(jsonPath("$.error", is("Forbidden")))
+                .andExpect(jsonPath(
+                        "$.message",
+                        is("Bu onay adımında işlem yapma yetkiniz yok.")
+                ));
     }
 }

@@ -8,12 +8,14 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 
 import java.util.List;
 
+@SecurityRequirement(name = "bearer-key")
 @RestController
-@RequestMapping("/api/requests")
 @RequiredArgsConstructor
+@RequestMapping("/api/requests")
 public class RequestController {
 
     private final RequestService requestService;
@@ -34,7 +36,9 @@ public class RequestController {
     }
 
     @GetMapping("/my-requests")
-    public ResponseEntity<List<RequestResponseDto>> getMyRequests(@RequestParam Long employeeId) {
-        return ResponseEntity.ok(requestService.getMyRequests(employeeId));
+    public ResponseEntity<List<RequestResponseDto>> getMyRequests() {
+        return ResponseEntity.ok(
+                requestService.getMyRequests()
+        );
     }
 }

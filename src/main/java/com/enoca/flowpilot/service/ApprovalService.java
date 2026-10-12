@@ -17,6 +17,6 @@ public interface ApprovalService {
     void rejectStep(Long stepId, RejectRequestDto dto);
 
     // Listeleme metotları
-    List<ApprovalStepResponseDto> getPendingStepsForApprover(Long employeeId);
+    List<ApprovalStepResponseDto> getPendingStepsForApprover();
     List<ApprovalHistoryResponseDto> getRequestHistory(Long requestId);
 }

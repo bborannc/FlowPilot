@@ -16,5 +16,5 @@ public interface RequestService {
     RequestResponseDto getRequestDetails(Long requestId);
 
     // 4. Kullanıcının taleplerini listeler
-    List<RequestResponseDto> getMyRequests(Long employeeId);
+    List<RequestResponseDto> getMyRequests();
 }

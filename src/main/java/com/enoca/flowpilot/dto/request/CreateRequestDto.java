@@ -14,8 +14,6 @@ import java.util.Map;
 @Builder
 public class CreateRequestDto {
 
-    @NotNull(message = "Çalışan ID boş olamaz.")
-    private Long employeeId;
 
     @NotNull(message = "Talep tipi boş olamaz.")
     private RequestType requestType;

@@ -42,19 +42,24 @@ public class ApprovalAuthorizationService {
             return;
         }
 
-        // Belirli bir çalışan atanmamışsa rol kontrolü yapılır.
         if (step.getAssignedRole() != null) {
 
             Employee currentEmployee =
                     employeeService.getById(currentEmployeeId);
 
-            Long currentRoleId =
-                    currentEmployee.getRole().getId();
+            Long currentRoleId = null;
+
+            if (currentEmployee != null
+                    && currentEmployee.getRole() != null) {
+                currentRoleId = currentEmployee.getRole().getId();
+            }
 
             Long assignedRoleId =
                     step.getAssignedRole().getId();
 
-            if (Objects.equals(currentRoleId, assignedRoleId)) {
+            if (currentRoleId != null
+                    && assignedRoleId != null
+                    && Objects.equals(currentRoleId, assignedRoleId)) {
                 return;
             }
         }

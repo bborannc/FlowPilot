@@ -24,7 +24,8 @@ public interface ApprovalStepRepository extends JpaRepository<ApprovalStep, Long
             "     (emp.id IS NOT NULL AND emp.id = :employeeId) " +
             "     OR " +
             "     (emp.id IS NULL AND role.id = :roleId)" +
-            ")")
+            ") " +
+            "ORDER BY r.createdAt ASC, s.stepOrder ASC")
     List<ApprovalStep> findPendingStepsForApprover(
             @Param("employeeId") Long employeeId,
             @Param("roleId") Long roleId,

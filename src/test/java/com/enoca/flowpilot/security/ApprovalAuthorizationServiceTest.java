@@ -118,4 +118,22 @@ class ApprovalAuthorizationServiceTest {
 
         assertEquals(403, exception.getStatusCode().value());
     }
+
+    @Test
+    void roluOlmayanCalisanOnayAdimindaIslemYapamamali() {
+        when(currentUserService.getCurrentEmployeeId()).thenReturn(4L);
+
+        when(step.getAssignedEmployee()).thenReturn(null);
+        when(step.getAssignedRole()).thenReturn(assignedRole);
+
+        when(employeeService.getById(4L)).thenReturn(currentEmployee);
+        when(currentEmployee.getRole()).thenReturn(null);
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> authorizationService.assertCanActOnStep(step)
+        );
+
+        assertEquals(403, exception.getStatusCode().value());
+    }
 }

@@ -25,7 +25,7 @@ public class ApprovalStep {
     private ApprovalStepStatus status;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "assigned_role_id")
+    @JoinColumn(name = "assigned_role_id", nullable = false)
     private Role assignedRole;
 
     @ManyToOne(fetch = FetchType.LAZY)
